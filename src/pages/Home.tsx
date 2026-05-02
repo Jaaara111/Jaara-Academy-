@@ -3,8 +3,10 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { GraduationCap, HelpCircle, BookOpen, ChevronRight, Calculator, Microscope, Beaker, Zap, Book, History, Bot } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { dbService } from '@/services/db';
+import { authService, AuthUser } from '@/services/authService';
 import { Subject } from '@/types';
 import { motion } from 'motion/react';
+import { Button } from '@/components/ui/button';
 
 const iconMap: Record<string, any> = {
   Calculator,
@@ -17,9 +19,11 @@ const iconMap: Record<string, any> = {
 
 export default function Home() {
   const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [user, setUser] = useState<AuthUser | null>(null);
 
   useEffect(() => {
     dbService.getSubjects().then(setSubjects);
+    setUser(authService.getSession());
   }, []);
 
   const quickLinks = [
@@ -49,15 +53,22 @@ export default function Home() {
             </div>
           </div>
           <h1 className="text-4xl md:text-6xl font-bold mb-4 leading-tight tracking-tight">
-            Education Made <br/>Truly Accessible
+            {user ? (
+              <>Halo, <span className="text-sky-300">{user.displayName || 'Student'}!</span> <br/>Ready to Learn?</>
+            ) : (
+              <>Education Made <br/>Truly Accessible</>
+            )}
           </h1>
           <p className="text-blue-100 text-lg mb-8 opacity-90 max-w-lg">
-            Empowering students with thousands of past exams, interactive quests, and digital textbooks in one professional hub.
+            {user 
+              ? `You have collected ${user.points || 0} influence points. Check the leaderboard to see your rank among peers across Sofia.` 
+              : 'Empowering students with thousands of past exams, interactive quests, and digital textbooks in one professional hub.'
+            }
           </p>
           <div className="flex flex-wrap gap-4">
-            <Link to="/exams">
+            <Link to={user ? "/leaderboard" : "/exams"}>
               <button className="bg-white text-blue-700 px-6 py-3 rounded-xl font-bold hover:shadow-lg transition-all">
-                Practice Exams
+                {user ? "View Leaderboard" : "Practice Exams"}
               </button>
             </Link>
             <Link to="/ai-tutor">
@@ -68,9 +79,94 @@ export default function Home() {
           </div>
         </motion.div>
         
+        {/* Floating Stats for Logged In Users */}
+        {user && (
+          <div className="mt-12 grid grid-cols-1 sm:grid-cols-3 gap-4 relative z-10">
+            {[
+              { label: 'Weekly Goal', val: '85%', sub: 'Target: 90%', icon: Zap, color: 'bg-yellow-400' },
+              { label: 'Daily Streak', val: '12 Days', sub: 'New Record!', icon: Zap, color: 'bg-orange-500' },
+              { label: 'Global Rank', val: '#42', sub: 'Top 5%', icon: GraduationCap, color: 'bg-emerald-500' },
+            ].map((stat, i) => (
+              <motion.div 
+                key={i}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5 + i * 0.1 }}
+                className="bg-white/10 backdrop-blur-lg border border-white/20 p-4 rounded-2xl flex items-center gap-4"
+              >
+                <div className={`w-10 h-10 ${stat.color} rounded-xl flex items-center justify-center text-white`}>
+                  <stat.icon className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold text-white/60 uppercase tracking-widest leading-none mb-1">{stat.label}</p>
+                  <p className="text-lg font-black text-white leading-none">{stat.val}</p>
+                  <p className="text-[10px] text-white/40 mt-1">{stat.sub}</p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        )}
+        
         {/* Subtle background decoration */}
         <div className="absolute right-[-10%] bottom-[-20%] w-[50%] aspect-square bg-blue-600 rounded-full opacity-20 blur-3xl" />
         <div className="absolute left-[80%] top-[-10%] w-[30%] aspect-square bg-sky-400 rounded-full opacity-20 blur-2xl" />
+      </section>
+
+      {/* Daily Challenge Section */}
+      <section>
+        <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-[2.5rem] p-8 md:p-12 shadow-2xl overflow-hidden relative group">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/20 blur-[100px] rounded-full -translate-y-1/2 translate-x-1/2 group-hover:bg-blue-500/30 transition-all duration-700" />
+          <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <div className="space-y-6">
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-500/20 border border-blue-500/30 rounded-full text-blue-400 text-xs font-black uppercase tracking-widest">
+                <Zap className="w-4 h-4 fill-current" />
+                Daily Challenge
+              </div>
+              <h2 className="text-3xl md:text-5xl font-black text-white leading-tight">
+                Master 10 Questions <br/>in <span className="text-blue-400">10 Minutes.</span>
+              </h2>
+              <p className="text-slate-400 text-lg leading-relaxed max-w-md">
+                Boost your influence points by completing our daily quiz curated from the most challenging exam categories.
+              </p>
+              <div className="flex gap-4">
+                <Link to="/questions">
+                  <Button className="h-14 px-10 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-black text-lg transition-all shadow-xl shadow-blue-500/20 active:scale-95 border-none">
+                    Start Challenge
+                  </Button>
+                </Link>
+                <div className="flex items-center gap-3">
+                  <div className="flex -space-x-3">
+                    {[1, 2, 3].map(i => (
+                      <div key={i} className="w-10 h-10 rounded-full border-2 border-slate-900 bg-slate-800 flex items-center justify-center overflow-hidden">
+                         <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${i + 10}`} alt="" />
+                      </div>
+                    ))}
+                  </div>
+                    <span className="text-xs font-bold text-slate-400">+1.2k playing</span>
+                  </div>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                 {[
+                   { label: 'Exams', val: '2,500+', icon: GraduationCap, sub: 'Updated Weekly' },
+                   { label: 'Materials', val: '1,200+', icon: BookOpen, sub: 'Digital Books' },
+                   { label: 'Success', val: '98%', icon: HelpCircle, sub: 'Score Rate' },
+                   { label: 'Support', val: '24/7', icon: Bot, sub: 'AI Tutoring' },
+                 ].map((box, i) => (
+                    <motion.div 
+                      key={i}
+                      whileHover={{ y: -5 }}
+                      className="bg-white/5 border border-white/10 p-6 rounded-3xl"
+                    >
+                      <box.icon className="w-6 h-6 text-blue-400 mb-4" />
+                      <p className="text-2xl font-black text-white leading-none">{box.val}</p>
+                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-2">{box.label}</p>
+                      <p className="text-[10px] text-slate-600 mt-1">{box.sub}</p>
+                    </motion.div>
+                 ))}
+              </div>
+            </div>
+          </div>
       </section>
 
       {/* Quick Access */}
@@ -161,13 +257,4 @@ export default function Home() {
       </section>
     </div>
   );
-}
-
-// Minimal button fallback if needed
-function Button({ children, variant, className, ...props }: any) {
-  const variants: any = {
-    link: 'text-blue-600 hover:underline px-0',
-    primary: 'bg-blue-600 text-white hover:bg-blue-700 font-bold px-8 py-3 rounded-xl'
-  };
-  return <button className={`${variants[variant] || 'bg-blue-600 text-white px-4 py-2 rounded-lg'} ${className}`} {...props}>{children}</button>;
 }

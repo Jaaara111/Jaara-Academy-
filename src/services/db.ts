@@ -10,9 +10,11 @@ import {
   serverTimestamp,
   getDoc,
   setDoc,
-  limit
+  limit,
+  orderBy
 } from 'firebase/firestore';
-import { db, auth } from '../lib/firebase';
+import { db } from '../lib/firebase';
+import { authService } from './authService';
 import { Subject, Exam, Question, Book, Favorite, AIConversation, AIMessage } from '../types';
 
 enum OperationType {
@@ -24,12 +26,20 @@ enum OperationType {
   WRITE = 'write',
 }
 
+const WITH_TIMEOUT = (promise: Promise<any>, ms: number = 10000) => {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(new Error('Operation timed out. Please check your connection.')), ms))
+  ]);
+};
+
 function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
+  const user = authService.getSession();
   const errInfo = {
     error: error instanceof Error ? error.message : String(error),
     authInfo: {
-      userId: auth.currentUser?.uid,
-      email: auth.currentUser?.email,
+      userId: user?.uid,
+      phoneNumber: user?.phoneNumber,
     },
     operationType,
     path
@@ -55,7 +65,7 @@ const MOCK_SUBJECTS: Subject[] = [
 export const dbService = {
   async getSubjects(): Promise<Subject[]> {
     try {
-      const snap = await getDocs(collection(db, 'subjects'));
+      const snap = await WITH_TIMEOUT(getDocs(collection(db, 'subjects')));
       return snap.docs.map(d => ({ id: d.id, ...d.data() } as Subject));
     } catch (e) {
       handleFirestoreError(e, OperationType.LIST, 'subjects');
@@ -155,16 +165,71 @@ export const dbService = {
   },
 
   async getStats() {
-    const [exams, books, questions] = await Promise.all([
-      this.getExams(),
-      this.getBooks(),
-      this.getQuestions()
-    ]);
-    return {
-      exams: exams.length,
-      books: books.length,
-      questions: questions.length
-    };
+    try {
+      const [exams, books, questions, users] = await Promise.all([
+        this.getExams(),
+        this.getBooks(),
+        this.getQuestions(),
+        this.getAllUsers()
+      ]);
+      return {
+        exams: exams.length,
+        books: books.length,
+        questions: questions.length,
+        users: users.length
+      };
+    } catch (e) {
+      return { exams: 0, books: 0, questions: 0, users: 0 };
+    }
+  },
+
+  async deleteUser(id: string) {
+    try {
+      await deleteDoc(doc(db, 'users', id));
+    } catch (e) {
+      handleFirestoreError(e, OperationType.DELETE, 'users');
+    }
+  },
+
+  async updateUserRole(id: string, role: 'student' | 'admin') {
+    try {
+      await updateDoc(doc(db, 'users', id), { role });
+    } catch (e) {
+      handleFirestoreError(e, OperationType.UPDATE, 'users');
+    }
+  },
+
+  async updateUserScore(userId: string, points: number) {
+    try {
+      const userDoc = doc(db, 'users', userId);
+      const snap = await getDoc(userDoc);
+      if (snap.exists()) {
+        const currentScore = snap.data().totalScore || 0;
+        const currentPoints = snap.data().points || 0;
+        await updateDoc(userDoc, {
+          totalScore: currentScore + points,
+          points: currentPoints + points,
+          lastActivity: serverTimestamp()
+        });
+      }
+    } catch (e) {
+      console.error("Error updating score:", e);
+    }
+  },
+
+  async getLeaderboard(): Promise<any[]> {
+    try {
+      const q = query(
+        collection(db, 'users'), 
+        orderBy('totalScore', 'desc'), 
+        limit(20)
+      );
+      const snap = await getDocs(q);
+      return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    } catch (e) {
+      console.error("Error fetching leaderboard:", e);
+      return [];
+    }
   },
 
   async deleteExam(id: string) {
@@ -188,6 +253,26 @@ export const dbService = {
       await deleteDoc(doc(db, 'questions', id));
     } catch (e) {
       handleFirestoreError(e, OperationType.DELETE, 'questions');
+    }
+  },
+
+  async addSubject(name: string, icon: string) {
+    try {
+      return await addDoc(collection(db, 'subjects'), {
+        name,
+        icon,
+        createdAt: serverTimestamp()
+      });
+    } catch (e) {
+      handleFirestoreError(e, OperationType.CREATE, 'subjects');
+    }
+  },
+
+  async deleteSubject(id: string) {
+    try {
+      await deleteDoc(doc(db, 'subjects', id));
+    } catch (e) {
+      handleFirestoreError(e, OperationType.DELETE, 'subjects');
     }
   },
 
@@ -227,7 +312,7 @@ export const dbService = {
   async getAllUsers(): Promise<any[]> {
     try {
       const q = query(collection(db, 'users'), limit(50));
-      const snapshot = await getDocs(q);
+      const snapshot = await WITH_TIMEOUT(getDocs(q));
       return snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
     } catch (e) {
       handleFirestoreError(e, OperationType.GET, 'users');
@@ -238,15 +323,50 @@ export const dbService = {
   async sendMessage(senderId: string, receiverId: string, text: string) {
     try {
       const chatRoomId = [senderId, receiverId].sort().join('_');
-      await addDoc(collection(db, 'messages'), {
+      
+      // 1. Add message
+      await addDoc(collection(db, 'chat_messages'), {
         chatRoomId,
         senderId,
         receiverId,
         text,
         createdAt: serverTimestamp()
       });
+
+      // 2. Update conversation metadata
+      const convRef = doc(db, 'chat_conversations', chatRoomId);
+      const convSnap = await getDoc(convRef);
+
+      if (convSnap.exists()) {
+        await updateDoc(convRef, {
+          lastMessage: text,
+          lastMessageSenderId: senderId,
+          updatedAt: serverTimestamp()
+        });
+      } else {
+        await setDoc(convRef, {
+          participants: [senderId, receiverId],
+          lastMessage: text,
+          lastMessageSenderId: senderId,
+          updatedAt: serverTimestamp()
+        });
+      }
     } catch (e) {
-      handleFirestoreError(e, OperationType.CREATE, 'messages');
+      handleFirestoreError(e, OperationType.CREATE, 'chat_messages');
+    }
+  },
+
+  async getChatConversations(userId: string): Promise<any[]> {
+    try {
+      const q = query(
+        collection(db, 'chat_conversations'),
+        where('participants', 'array-contains', userId)
+      );
+      const snap = await getDocs(q);
+      return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    } catch (e) {
+      handleFirestoreError(e, OperationType.LIST, 'chat_conversations');
+      return [];
     }
   },
 

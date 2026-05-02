@@ -8,6 +8,8 @@ import Admin from './pages/Admin';
 import Login from './pages/Login';
 import Chat from './pages/Chat';
 import AITutor from './pages/AITutor';
+import Profile from './pages/Profile';
+import Leaderboard from './pages/Leaderboard';
 import { Toaster } from 'sonner';
 
 export default function App() {
@@ -24,6 +26,8 @@ export default function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/chat" element={<Chat />} />
           <Route path="/ai-tutor" element={<AITutor />} />
+          <Route path="/leaderboard" element={<Leaderboard />} />
+          <Route path="/profile" element={<Profile />} />
           {/* Specific subject views could be added as well */}
           <Route path="/subject/:id" element={<Exams />} /> 
         </Routes>

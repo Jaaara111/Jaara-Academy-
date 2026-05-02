@@ -1,10 +1,9 @@
 import { ReactNode, useState, useEffect } from 'react';
-import { NavLink, Link } from 'react-router-dom';
-import { Home, BookOpen, GraduationCap, HelpCircle, LayoutDashboard, User, Search, Menu, MessageSquare, Sun, Moon, Monitor, Bot } from 'lucide-react';
+import { NavLink, Link, useNavigate } from 'react-router-dom';
+import { Home, BookOpen, GraduationCap, HelpCircle, LayoutDashboard, User, Search, Menu, MessageSquare, Sun, Moon, Monitor, Bot, ShieldAlert } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { auth } from '@/lib/firebase';
-import { useAuthState } from 'react-firebase-hooks/auth';
+import { authService, AuthUser } from '@/services/authService';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 interface LayoutProps {
@@ -12,12 +11,16 @@ interface LayoutProps {
 }
 
 export default function Layout({ children }: LayoutProps) {
-  const [user] = useAuthState(auth);
+  const navigate = useNavigate();
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [theme, setTheme] = useState<'light' | 'dark' | 'system'>(() => {
     return (localStorage.getItem('jaara-theme') as any) || 'system';
   });
 
   useEffect(() => {
+    // Load custom session
+    setUser(authService.getSession());
+
     const root = window.document.documentElement;
     root.classList.remove('light', 'dark');
 
@@ -30,6 +33,12 @@ export default function Layout({ children }: LayoutProps) {
     localStorage.setItem('jaara-theme', theme);
   }, [theme]);
 
+  const handleSignOut = () => {
+    authService.logout();
+    setUser(null);
+    navigate('/login');
+  };
+
   const navItems = [
     { to: '/', icon: Home, label: 'Home' },
     { to: '/exams', icon: GraduationCap, label: 'Exams' },
@@ -37,6 +46,7 @@ export default function Layout({ children }: LayoutProps) {
     { to: '/books', icon: BookOpen, label: 'Books' },
     { to: '/chat', icon: MessageSquare, label: 'Chat' },
     { to: '/ai-tutor', icon: Bot, label: 'AI Tutor' },
+    { to: '/leaderboard', icon: GraduationCap, label: 'Leaders' },
   ];
 
   return (
@@ -100,9 +110,11 @@ export default function Layout({ children }: LayoutProps) {
                 )}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate dark:text-white">{user.displayName || user.phoneNumber || 'Student'}</p>
+                <Link to="/profile">
+                  <p className="text-sm font-medium truncate dark:text-white hover:text-blue-600 transition-colors cursor-pointer">{user.displayName || user.phoneNumber || 'Student'}</p>
+                </Link>
                 <button 
-                  onClick={() => auth.signOut()}
+                  onClick={handleSignOut}
                   className="text-xs text-slate-500 hover:text-red-600"
                 >
                   Sign Out
@@ -200,6 +212,47 @@ export default function Layout({ children }: LayoutProps) {
           </div>
         </div>
         {children}
+        
+        {/* Professional Footer */}
+        <footer className="mt-20 pt-12 pb-8 border-t border-slate-200">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
+            <div className="col-span-1 md:col-span-2 space-y-4">
+              <div className="flex items-center gap-3">
+                <img src="/logo.png" alt="Jaara" className="w-8 h-8 rounded-lg shadow-sm" />
+                <span className="text-xl font-bold tracking-tight">Jaara Academy</span>
+              </div>
+              <p className="text-slate-500 text-sm max-w-sm leading-relaxed">
+                Empowering the next generation of Somali students with world-class digital learning materials, AI tutoring, and interactive assessment tools.
+              </p>
+            </div>
+            <div>
+              <h4 className="font-bold text-slate-900 mb-4">Quick Links</h4>
+              <ul className="space-y-2 text-sm text-slate-500">
+                <li><Link to="/exams" className="hover:text-blue-600 transition-colors">National Exams</Link></li>
+                <li><Link to="/books" className="hover:text-blue-600 transition-colors">Curriculum Books</Link></li>
+                <li><Link to="/questions" className="hover:text-blue-600 transition-colors">Daily Challenges</Link></li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="font-bold text-slate-900 mb-4">Legal</h4>
+              <ul className="space-y-2 text-sm text-slate-500">
+                <li><Link to="/privacy" className="hover:text-blue-600 transition-colors">Privacy Policy</Link></li>
+                <li><Link to="/terms" className="hover:text-blue-600 transition-colors">Terms of Service</Link></li>
+                <li><Link to="/contact" className="hover:text-blue-600 transition-colors">Contact Support</Link></li>
+              </ul>
+            </div>
+          </div>
+          <div className="pt-8 border-t border-slate-100 flex flex-col md:flex-row items-center justify-between gap-4">
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+              © 2024 Jaara Academy AI • All Rights Reserved
+            </p>
+            <div className="flex items-center gap-6">
+              <span className="text-[10px] font-black text-blue-600 uppercase tracking-tighter flex items-center gap-1">
+                <ShieldAlert className="w-3 h-3" /> Secure Educational Network
+              </span>
+            </div>
+          </div>
+        </footer>
       </main>
 
       {/* Bottom Nav for Mobile */}

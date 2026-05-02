@@ -15,16 +15,19 @@ const fallbackConfig = {
 let firebaseConfig = fallbackConfig;
 let firestoreDatabaseId = "(default)";
 
+// Synchronous check if file exists is not possible in browser, 
+// so we use a more robust try-catch with dynamic import.
 try {
   // @ts-ignore
   const config = await import('../../firebase-applet-config.json');
-  firebaseConfig = config.default;
-  const configData = config.default as any;
-  if (configData.firestoreDatabaseId) {
-    firestoreDatabaseId = configData.firestoreDatabaseId;
+  if (config && config.default) {
+    firebaseConfig = config.default;
+    if (config.default.firestoreDatabaseId) {
+      firestoreDatabaseId = config.default.firestoreDatabaseId;
+    }
   }
 } catch (e) {
-  console.warn("Firebase config not found. Running in offline/mock mode.");
+  console.warn("Firebase configuration not fully loaded yet or missing.");
 }
 
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
@@ -32,15 +35,16 @@ export const auth = getAuth(app);
 export const db = getFirestore(app, firestoreDatabaseId);
 
 async function testConnection() {
+  if (firebaseConfig.apiKey === "placeholder") return;
+  
   try {
-    await getDocFromServer(doc(db, 'test', 'connection'));
+    // Force a server check with a small timeout logic in the calling side or just let it fail
+    const docRef = doc(db, 'test', 'connection');
+    await getDocFromServer(docRef);
+    console.log("Firestore connection verified.");
   } catch (error) {
-    if (error instanceof Error && error.message.includes('the client is offline')) {
-      console.error("Please check your Firebase configuration. You may be offline or the project is not provisioned.");
-    }
+    console.error("Firestore connection issue:", error);
   }
 }
 
-if (firebaseConfig.apiKey !== "placeholder") {
-  testConnection();
-}
+testConnection();

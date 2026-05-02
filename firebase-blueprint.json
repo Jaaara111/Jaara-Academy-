@@ -8,11 +8,12 @@
         "uid": { "type": "string" },
         "displayName": { "type": "string" },
         "phoneNumber": { "type": "string" },
+        "password": { "type": "string", "description": "Hashed password" },
         "photoURL": { "type": "string" },
         "lastLogin": { "type": "object" },
         "createdAt": { "type": "object" }
       },
-      "required": ["uid", "phoneNumber"]
+      "required": ["uid", "phoneNumber", "password"]
     },
     "Message": {
       "title": "Chat Message",
@@ -50,6 +51,29 @@
         "timestamp": { "type": "object" }
       },
       "required": ["conversationId", "role", "content", "timestamp"]
+    },
+    "ChatConversation": {
+      "title": "Peer-to-Peer Conversation",
+      "description": "Metadata for a chat between two people",
+      "type": "object",
+      "properties": {
+        "participants": { "type": "array" },
+        "lastMessage": { "type": "string" },
+        "lastMessageSenderId": { "type": "string" },
+        "updatedAt": { "type": "object" }
+      },
+      "required": ["participants", "updatedAt"]
+    },
+    "Subject": {
+      "title": "Educational Subject",
+      "description": "Category for exams, books, and questions",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "icon": { "type": "string" },
+        "createdAt": { "type": "object" }
+      },
+      "required": ["name", "icon"]
     }
   },
   "firestore": {
@@ -57,9 +81,13 @@
       "schema": "User",
       "description": "User profiles"
     },
-    "/messages/{messageId}": {
+    "/chat_conversations/{chatId}": {
+      "schema": "ChatConversation",
+      "description": "Peer-to-peer chat sessions"
+    },
+    "/chat_messages/{messageId}": {
       "schema": "Message",
-      "description": "Private chat messages"
+      "description": "Messages within peer-to-peer chats"
     },
     "/conversations/{conversationId}": {
       "schema": "AIConversation",
@@ -68,6 +96,10 @@
     "/ai_messages/{aiMessageId}": {
       "schema": "AIMessage",
       "description": "Messages belonging to AI conversations"
+    },
+    "/subjects/{subjectId}": {
+      "schema": "Subject",
+      "description": "Educational subject categories"
     }
   }
 }

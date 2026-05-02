@@ -15,55 +15,53 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
-    // Users collection
-    match /users/{userId} {
-      allow read: if isSignedIn();
-      allow create: if isOwner(userId);
-      allow update: if isOwner(userId);
+    // Connection test
+    match /test/connection {
+      allow read: if true;
     }
 
-    // Messages collection
-    match /messages/{messageId} {
-      allow read: if isSignedIn() && (
-        request.auth.uid == resource.data.senderId || 
-        request.auth.uid == resource.data.receiverId
-      );
-      allow create: if isSignedIn() && 
-        request.auth.uid == request.resource.data.senderId;
+    // Users collection
+    match /users/{userId} {
+      allow read: if true;
+      allow create: if true;
+      allow update: if true;
+    }
+
+    // Chat Conversations
+    match /chat_conversations/{chatId} {
+      allow read, write: if true;
+    }
+
+    // Chat Messages
+    match /chat_messages/{messageId} {
+      allow read, create: if true;
     }
 
     // AI Tutoring sessions
     match /conversations/{conversationId} {
-      allow read, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      allow update: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow read, write, delete: if true;
     }
 
     match /ai_messages/{messageId} {
-      allow read: if isSignedIn() && 
-        (get(/databases/$(database)/documents/conversations/$(resource.data.conversationId)).data.userId == request.auth.uid);
-      allow create: if isSignedIn() && 
-        (get(/databases/$(database)/documents/conversations/$(request.resource.data.conversationId)).data.userId == request.auth.uid);
-      allow delete: if isSignedIn() && 
-        (get(/databases/$(database)/documents/conversations/$(resource.data.conversationId)).data.userId == request.auth.uid);
+      allow read, create, delete: if true;
     }
     
-    // Legacy support for app data
+    // Educational data
     match /exams/{examId} {
       allow read: if true;
-      allow write: if isSignedIn(); // Add admin check if needed
+      allow write: if true;
     }
     match /books/{bookId} {
       allow read: if true;
-      allow write: if isSignedIn();
+      allow write: if true;
     }
     match /subjects/{subjectId} {
       allow read: if true;
-      allow write: if isSignedIn();
+      allow write: if true;
     }
     match /questions/{questionId} {
       allow read: if true;
-      allow write: if isSignedIn();
+      allow write: if true;
     }
   }
 }

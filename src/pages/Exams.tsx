@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import { dbService } from '@/services/db';
 import { Exam, Subject } from '@/types';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { FileText, Download, Filter, GraduationCap } from 'lucide-react';
+import { FileText, Download, Filter, GraduationCap, Search } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { motion, AnimatePresence } from 'motion/react';
@@ -14,6 +14,7 @@ export default function Exams() {
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [loading, setLoading] = useState(true);
   const [level, setLevel] = useState<string>('all');
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     async function init() {
@@ -29,7 +30,11 @@ export default function Exams() {
     init();
   }, [subjectId]);
 
-  const filteredExams = exams.filter(e => level === 'all' || e.level === level);
+  const filteredExams = exams.filter(e => {
+    const matchesLevel = level === 'all' || e.level === level;
+    const matchesSearch = e.title.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchesLevel && matchesSearch;
+  });
   const currentSubject = subjects.find(s => s.id === subjectId);
 
   return (
@@ -42,13 +47,25 @@ export default function Exams() {
           <p className="text-slate-500">Practice with national examination papers from previous years.</p>
         </div>
 
-        <Tabs defaultValue="all" onValueChange={setLevel} className="w-full md:w-auto">
-          <TabsList className="bg-white border border-slate-200">
-            <TabsTrigger value="all">All Levels</TabsTrigger>
-            <TabsTrigger value="Class 8">Class 8</TabsTrigger>
-            <TabsTrigger value="Form 4">Form 4</TabsTrigger>
-          </TabsList>
-        </Tabs>
+        <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+          <div className="relative flex-1 sm:w-64">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <input 
+              type="text" 
+              placeholder="Search exams..." 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <Tabs defaultValue="all" onValueChange={setLevel} className="w-full sm:w-auto">
+            <TabsList className="bg-white border border-slate-200">
+              <TabsTrigger value="all">All Levels</TabsTrigger>
+              <TabsTrigger value="Class 8">Class 8</TabsTrigger>
+              <TabsTrigger value="Form 4">Form 4</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

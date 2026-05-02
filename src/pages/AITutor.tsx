@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { 
   Send, Bot, User, Loader2, Sparkles, Languages, 
   MessageSquare, Plus, Trash2, ChevronLeft, Menu, 
-  Clock, MoreVertical, X, HelpCircle
+  Clock, MoreVertical, X, HelpCircle, LogIn
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,13 +11,16 @@ import { Card } from '@/components/ui/card';
 import { motion, AnimatePresence } from 'motion/react';
 import { aiService } from '@/services/aiService';
 import { dbService } from '@/services/db';
-import { auth } from '@/lib/firebase';
+import { authService, AuthUser } from '@/services/authService';
 import { AIConversation, AIMessage } from '@/types';
 import Markdown from 'react-markdown';
 import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
 
 export default function AITutor() {
-  const [user, setUser] = useState(auth.currentUser);
+  const navigate = useNavigate();
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [isAuthChecking, setIsAuthChecking] = useState(true);
   const [conversations, setConversations] = useState<AIConversation[]>([]);
   const [activeConversation, setActiveConversation] = useState<AIConversation | null>(null);
   const [messages, setMessages] = useState<Partial<AIMessage>[]>([
@@ -28,12 +31,18 @@ export default function AITutor() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Auth listener
+  // Auth check
   useEffect(() => {
-    const unsub = auth.onAuthStateChanged(u => {
-      setUser(u);
-    });
-    return () => unsub();
+    const session = authService.getSession();
+    if (!session) {
+      setIsAuthChecking(false);
+      // We don't necessarily need to redirect immediately here if we want to show a screen, 
+      // but the prompt says: "If NOT logged in → show authentication screen"
+      // I'll show a "Login Required" overlay or screen.
+    } else {
+      setUser(session);
+      setIsAuthChecking(false);
+    }
   }, []);
 
   // Load conversations
@@ -105,6 +114,10 @@ export default function AITutor() {
 
   const handleSend = async (e?: React.FormEvent) => {
     e?.preventDefault();
+    if (!user) {
+      toast.error("Fadlan gudaha soo gal si aad u bilowdo sheekada");
+      return;
+    }
     const userMessage = input.trim();
     if (!userMessage || isLoading) return;
 
@@ -115,8 +128,8 @@ export default function AITutor() {
     try {
       let currentConv = activeConversation;
 
-      // 1. Create conversation in DB ONLY IF user is logged in
-      if (user && !currentConv) {
+      // 1. Create conversation in DB
+      if (!currentConv) {
         const title = userMessage.slice(0, 30) + (userMessage.length > 30 ? '...' : '');
         try {
           const newConvSnap = await dbService.createConversation(user.uid, title);
@@ -138,7 +151,7 @@ export default function AITutor() {
 
       // Add user message to UI
       const userMsg: Partial<AIMessage> = { 
-        conversationId: currentConv?.id || 'guest', 
+        conversationId: currentConv?.id || 'chat', 
         role: 'user', 
         content: userMessage, 
         timestamp: { seconds: Date.now()/1000 } 
@@ -146,12 +159,12 @@ export default function AITutor() {
       const updatedMessages = [...messages, userMsg];
       setMessages(updatedMessages);
 
-      // Save to DB ONLY IF user is logged in
-      if (user && currentConv) {
+      // Save to DB
+      if (currentConv) {
         await dbService.addAIMessage(currentConv.id, 'user', userMessage);
       }
 
-      // 2. Prepare context for AI
+      // 2. Prepare context for AI (including the new message)
       const history = updatedMessages
         .filter(m => m.content !== "Soo dhawoow maxaa kaa caawiyaa")
         .map(m => ({
@@ -171,20 +184,9 @@ export default function AITutor() {
         // 4. Update UI
         setMessages(prev => [...prev, aiMsg]);
         
-        // Save AI response to DB ONLY IF user is logged in
-        if (user && currentConv) {
+        // Save AI response to DB
+        if (currentConv) {
           await dbService.addAIMessage(currentConv.id, 'model', aiResponse);
-        }
-
-        // Show prompt to login for guests after 3 messages
-        if (!user && updatedMessages.length >= 7) { // 1 welcome + 3 user + 3 AI = 7
-           toast("Create an account to save your chats", {
-             description: "Chat history is not saved in guest mode.",
-             action: {
-               label: "Login",
-               onClick: () => window.location.href = '/login'
-             }
-           });
         }
       }
     } catch (error) {
@@ -194,6 +196,34 @@ export default function AITutor() {
       setIsLoading(false);
     }
   };
+
+  if (isAuthChecking) {
+    return (
+      <div className="flex items-center justify-center h-[calc(100vh-100px)]">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[calc(100vh-100px)] px-6 text-center">
+        <div className="w-24 h-24 bg-blue-100 rounded-3xl flex items-center justify-center mb-6 text-blue-600 shadow-xl shadow-blue-50">
+          <Bot className="w-12 h-12" />
+        </div>
+        <h2 className="text-2xl font-bold text-slate-800 mb-2">Login Required</h2>
+        <p className="text-slate-500 max-w-sm mb-8">
+          Fadlan gudaha u soo gal akoonkaaga si aad ula sheekaysato Macalinkaaga AI-ga ee Jaara Academy.
+        </p>
+        <Button 
+          onClick={() => navigate('/login')}
+          className="h-14 px-10 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-lg flex items-center gap-2 shadow-xl shadow-blue-100"
+        >
+          <LogIn className="w-6 h-6" /> Login Now
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-[calc(100vh-100px)] -m-4 md:-m-6 bg-slate-50 dark:bg-slate-950 overflow-hidden">
@@ -220,7 +250,7 @@ export default function AITutor() {
               <Button 
                 onClick={startNewChat}
                 disabled={!user}
-                className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white rounded-xl gap-2 font-bold shadow-lg shadow-blue-200 dark:shadow-none transition-all active:scale-95 disabled:opacity-50 disabled:grayscale"
+                className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white rounded-xl gap-2 font-bold shadow-lg shadow-blue-200 dark:shadow-none transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Plus className="w-4 h-4" /> New Conversation
               </Button>
@@ -289,11 +319,11 @@ export default function AITutor() {
               {user ? (
                 <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800 rounded-xl">
                   <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold">
-                    {user?.displayName?.charAt(0) || user?.email?.charAt(0) || 'S'}
+                    {user?.displayName?.charAt(0) || user?.phoneNumber?.charAt(0) || 'S'}
                   </div>
                   <div className="overflow-hidden">
-                    <p className="text-xs font-bold text-slate-700 dark:text-slate-200 truncate">{user?.displayName || user?.email || 'Student'}</p>
-                    <p className="text-[10px] text-slate-500 truncate">{user?.phoneNumber || user?.email}</p>
+                    <p className="text-xs font-bold text-slate-700 dark:text-slate-200 truncate">{user?.displayName || user?.phoneNumber || 'Student'}</p>
+                    <p className="text-[10px] text-slate-500 truncate">{user?.phoneNumber}</p>
                   </div>
                 </div>
               ) : (

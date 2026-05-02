@@ -1,265 +1,263 @@
-import { useState, useEffect, FormEvent } from 'react';
-import { auth } from '@/lib/firebase';
-import { dbService } from '@/services/db';
-import { RecaptchaVerifier, signInWithPhoneNumber, ConfirmationResult } from 'firebase/auth';
+import { useState, FormEvent } from 'react';
+import { authService, AuthUser } from '@/services/authService';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { GraduationCap, Phone, ShieldCheck, ArrowRight, Loader2, RefreshCcw, User } from 'lucide-react';
+import { GraduationCap, Phone, Lock, User, ArrowRight, Loader2, UserPlus, LogIn, Mail } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
 export default function Login() {
   const navigate = useNavigate();
-  const [countryCode, setCountryCode] = useState('+252');
+  const [view, setView] = useState<'login' | 'signup'>('login');
+  const [loginMethod, setLoginMethod] = useState<'phone' | 'email'>('phone');
   const [phoneNumber, setPhoneNumber] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
-  const [otp, setOtp] = useState('');
-  const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
   const [loading, setLoading] = useState(false);
-  const [step, setStep] = useState<'phone' | 'otp'>('phone');
 
-  useEffect(() => {
-    // Initialize Recaptcha
-    if (!(window as any).recaptchaVerifier) {
-      try {
-        (window as any).recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-          'size': 'invisible',
-          'callback': () => {
-            console.log("Recaptcha resolved");
-          },
-          'expired-callback': () => {
-            toast.error("Recaptcha expired. Please refresh.");
-          }
-        });
-      } catch (e) {
-        console.error("Recaptcha init failed", e);
-      }
-    }
-  }, []);
-
-  const handleSendOTP = async (e: FormEvent) => {
+  const handleLogin = async (e: FormEvent) => {
     e.preventDefault();
-    if (!phoneNumber) return toast.error('Please enter a phone number');
+    if (loginMethod === 'phone' && !phoneNumber) return toast.error('Fadlan geli lambarka');
+    if (loginMethod === 'email' && !email) return toast.error('Fadlan geli email-ka');
+    if (!password) return toast.error('Fadlan geli sirta');
     
     setLoading(true);
-    const appVerifier = (window as any).recaptchaVerifier;
-    
     try {
-      // Clean phone number (remove leading zeros if any)
-      const cleanNumber = phoneNumber.replace(/^0+/, '');
-      const fullNumber = `${countryCode}${cleanNumber}`;
-      
-      console.log("Attempting to send OTP to:", fullNumber);
-      
-      const result = await signInWithPhoneNumber(auth, fullNumber, appVerifier);
-      setConfirmationResult(result);
-      setStep('otp');
-      toast.success('OTP sent successfully!');
-    } catch (error: any) {
-      console.error("Firebase Auth Error:", error);
-      
-      if (error.code === 'auth/invalid-phone-number') {
-        toast.error('The phone number is invalid.');
-      } else if (error.code === 'auth/too-many-requests') {
-        toast.error('Too many attempts. Please try again later.');
-      } else if (error.code === 'auth/unauthorized-domain') {
-        toast.error('This domain is not authorized in Firebase Console.');
+      if (loginMethod === 'phone') {
+        await authService.login(phoneNumber, password);
       } else {
-        toast.error(error.message || 'Failed to send OTP. Check your connection.');
+        await authService.loginByEmail(email, password);
       }
-
-      // Reset recaptcha on failure
-      if ((window as any).recaptchaVerifier) {
-        try {
-          const widgetId = await (window as any).recaptchaVerifier.render();
-          (window as any).grecaptcha.reset(widgetId);
-        } catch (reErr) {
-          console.error("Recaptcha reset failed", reErr);
-        }
-      }
+      
+      toast.success('Si guul leh ayaad u gashay!');
+      navigate('/chat');
+      window.location.reload();
+    } catch (error: any) {
+      toast.error(error.message || 'Lamberka ama sirta ayaa khaldan');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleVerifyOTP = async (e: FormEvent) => {
+  const handleSignup = async (e: FormEvent) => {
     e.preventDefault();
-    if (!otp) return toast.error('Please enter the OTP');
-    if (!confirmationResult) return;
-
+    if (!fullName || !phoneNumber || !password) return toast.error('Fadlan buuxi dhamaan meelaha banaan');
+    if (password.length < 6) return toast.error('Sirta waa inay ka badnaataa 6 xaraf');
+    
     setLoading(true);
     try {
-      const result = await confirmationResult.confirm(otp);
-      if (result.user) {
-        // Update Firebase profile
-        const { updateProfile } = await import('firebase/auth');
-        await updateProfile(result.user, { displayName: fullName });
-        
-        // Sync with local users collection for chat discovery
-        await dbService.syncUser(result.user.uid, result.user.phoneNumber, fullName);
-      }
-      toast.success('Logged in successfully!');
-      navigate('/');
+      await authService.signup(fullName, phoneNumber, password);
+      toast.success('Akoonkaaga si guul leh ayaa loo abuuray!');
+      
+      // Clear inputs
+      setFullName('');
+      setPhoneNumber('');
+      setPassword('');
+      
+      navigate('/chat');
+      window.location.reload(); // Force reload to update auth state globally
     } catch (error: any) {
-      console.error(error);
-      toast.error('Invalid verification code');
+      console.error("Signup Error:", error);
+      toast.error(error.message || 'Wuu fashilmay abuurista akoonku');
     } finally {
       setLoading(false);
     }
-  };
-
-  const resetFlow = () => {
-    setStep('phone');
-    setConfirmationResult(null);
-    setOtp('');
   };
 
   return (
-    <div className="flex items-center justify-center min-h-[70vh]">
-      <div id="recaptcha-container"></div>
-      
-      <Card className="w-full max-w-md border-slate-200 shadow-xl overflow-hidden rounded-3xl">
-        <div className="bg-blue-600 p-8 text-white text-center">
-          <div className="w-24 h-24 mx-auto mb-4 rounded-2xl overflow-hidden border-4 border-white/20 shadow-xl">
+    <div className="flex items-center justify-center min-h-[80vh] px-4">
+      <Card className="w-full max-w-md border-slate-200 shadow-2xl overflow-hidden rounded-3xl">
+        <div className="bg-blue-600 p-8 text-white text-center relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl"></div>
+          <div className="absolute bottom-0 left-0 w-24 h-24 bg-blue-400/20 rounded-full -ml-12 -mb-12 blur-xl"></div>
+          
+          <div className="w-20 h-20 mx-auto mb-4 rounded-2xl overflow-hidden border-4 border-white/20 shadow-xl relative z-10">
             <img src="/logo.png" alt="Jaara Academy" className="w-full h-full object-cover" />
           </div>
-          <h1 className="text-2xl font-bold">Jaara Academy</h1>
-          <p className="opacity-80 text-sm italic">Learn Smart, Succeed Easily</p>
+          <h1 className="text-2xl font-bold relative z-10">Jaara Academy</h1>
+          <p className="opacity-80 text-sm italic relative z-10">Learn Smart, Succeed Easily</p>
         </div>
 
         <CardHeader className="pt-8 text-center px-8">
-          <CardTitle className="text-2xl">
-            {step === 'phone' ? 'Welcome Back' : 'Verification'}
+          <CardTitle className="text-2xl font-bold text-slate-800">
+            {view === 'login' ? 'Soo Dhawaaw' : 'Abuur Akoon'}
           </CardTitle>
-          <CardDescription>
-            {step === 'phone' 
-              ? 'Enter your phone number to continue' 
-              : `Enter the 6-digit code sent to ${phoneNumber}`}
+          <CardDescription className="text-slate-500">
+            {view === 'login' 
+              ? 'Geli lambarkaaga iyo sirtaada si aad u gasho' 
+              : 'Fadlan buuxi xogtaada si aad ugu biirto Jaara Academy'}
           </CardDescription>
         </CardHeader>
 
-        <CardContent className="pb-12 px-8">
+        <CardContent className="pb-10 px-8">
           <div className="space-y-6">
-            {step === 'phone' ? (
-              <form onSubmit={handleSendOTP} className="space-y-4">
+            {view === 'login' ? (
+              <form onSubmit={handleLogin} className="space-y-5">
+                <div className="flex bg-slate-100 p-1 rounded-xl mb-4">
+                  <button 
+                    type="button" 
+                    onClick={() => setLoginMethod('phone')}
+                    className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${loginMethod === 'phone' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500'}`}
+                  >
+                    Phone Number
+                  </button>
+                  <button 
+                    type="button" 
+                    onClick={() => setLoginMethod('email')}
+                    className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${loginMethod === 'email' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500'}`}
+                  >
+                    Email Address
+                  </button>
+                </div>
+
                 <div className="space-y-2">
-                  <label className="text-xs font-bold uppercase tracking-wider text-slate-400">Full Name</label>
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">
+                    {loginMethod === 'phone' ? 'Phone Number' : 'Email Address'}
+                  </label>
                   <div className="relative">
-                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                    {loginMethod === 'phone' ? (
+                      <>
+                        <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                        <Input 
+                          type="tel"
+                          placeholder="61xxxxxxx"
+                          value={phoneNumber}
+                          onChange={(e) => setPhoneNumber(e.target.value)}
+                          className="pl-12 h-14 rounded-2xl border-slate-100 focus:border-blue-500 focus:ring-4 focus:ring-blue-50 bg-slate-50/50 text-slate-700 font-medium transition-all"
+                          required
+                        />
+                      </>
+                    ) : (
+                      <>
+                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                        <Input 
+                          type="email"
+                          placeholder="name@example.com"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          className="pl-12 h-14 rounded-2xl border-slate-100 focus:border-blue-500 focus:ring-4 focus:ring-blue-50 bg-slate-50/50 text-slate-700 font-medium transition-all"
+                          required
+                        />
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Password</label>
+                  <div className="relative">
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                     <Input 
-                      type="text"
-                      placeholder="Your name"
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
-                      className="pl-11 h-14 rounded-2xl border-slate-200 focus:ring-blue-500 bg-slate-50"
+                      type="password"
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="pl-12 h-14 rounded-2xl border-slate-100 focus:border-blue-500 focus:ring-4 focus:ring-blue-50 bg-slate-50/50 text-slate-700 font-medium transition-all"
                       required
                     />
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <label className="text-xs font-bold uppercase tracking-wider text-slate-400">Phone Number</label>
-                  <div className="flex gap-2">
-                    <div className="w-24 shrink-0">
-                      <select 
-                        value={countryCode}
-                        onChange={(e) => setCountryCode(e.target.value)}
-                        className="w-full h-14 rounded-2xl border border-slate-200 bg-slate-50 px-3 text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none"
-                      >
-                        <option value="+252">🇸🇴 +252</option>
-                        <option value="+1">🇺🇸 +1</option>
-                        <option value="+44">🇬🇧 +44</option>
-                        <option value="+254">🇰🇪 +254</option>
-                        <option value="+251">🇪🇹 +251</option>
-                        <option value="+253">🇩🇯 +253</option>
-                        <option value="+971">🇦🇪 +971</option>
-                        <option value="+966">🇸🇦 +966</option>
-                      </select>
-                    </div>
-                    <div className="relative flex-1">
-                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                      <Input 
-                        type="tel"
-                        placeholder="61xxxxxxx"
-                        value={phoneNumber}
-                        onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, ''))}
-                        className="pl-11 h-14 rounded-2xl border-slate-200 focus:ring-blue-500 bg-slate-50"
-                        required
-                      />
-                    </div>
-                  </div>
-                  <p className="text-[10px] text-slate-400 mt-1">Include your area code without the leading zero.</p>
-                </div>
+
                 <Button 
                   type="submit"
                   disabled={loading}
-                  className="w-full h-14 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-bold flex items-center justify-center gap-2 shadow-lg shadow-blue-100 transition-all"
+                  className="w-full h-14 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-bold flex items-center justify-center gap-2 shadow-lg shadow-blue-100 transition-all active:scale-[0.98]"
                 >
-                  {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <>Send OTP <ArrowRight className="w-5 h-5" /></>}
+                  {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <>Login <LogIn className="w-5 h-5" /></>}
                 </Button>
                 
-                <div className="pt-2">
-                  <Button 
+                <div className="pt-2 text-center text-sm">
+                  <span className="text-slate-500">Miyaadan lahayn akoon? </span>
+                  <button 
                     type="button"
-                    variant="outline"
-                    onClick={() => navigate('/')}
-                    className="w-full h-14 rounded-2xl border-slate-200 text-slate-600 font-bold hover:bg-slate-50 transition-all"
+                    onClick={() => setView('signup')}
+                    className="text-blue-600 font-bold hover:underline"
                   >
-                    Continue as Guest
-                  </Button>
+                    Abuur hadda
+                  </button>
                 </div>
               </form>
             ) : (
-              <form onSubmit={handleVerifyOTP} className="space-y-4">
+              <form onSubmit={handleSignup} className="space-y-4">
                 <div className="space-y-2">
-                  <label className="text-xs font-bold uppercase tracking-wider text-slate-400">Enter OTP</label>
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Magacaaga oo buuxa</label>
                   <div className="relative">
-                    <ShieldCheck className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                    <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                     <Input 
                       type="text"
-                      placeholder="· · · · · ·"
-                      maxLength={6}
-                      value={otp}
-                      onChange={(e) => setOtp(e.target.value)}
-                      className="pl-11 h-14 rounded-2xl border-slate-200 focus:ring-blue-500 bg-slate-50 text-center text-2xl tracking-[0.5em] font-bold"
+                      placeholder="Magacaaga..."
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      className="pl-12 h-14 rounded-2xl border-slate-100 focus:border-blue-500 focus:ring-4 focus:ring-blue-50 bg-slate-50/50 text-slate-700 font-medium transition-all"
                       required
                     />
                   </div>
                 </div>
-                <div className="flex gap-2">
-                  <Button 
-                    type="button"
-                    variant="outline"
-                    onClick={resetFlow}
-                    className="h-14 rounded-2xl px-6 border-slate-200 bg-white"
-                  >
-                    <RefreshCcw className="w-5 h-5" />
-                  </Button>
-                  <Button 
-                    type="submit"
-                    disabled={loading}
-                    className="flex-1 h-14 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-lg shadow-blue-100 transition-all"
-                  >
-                    {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Verify & Login'}
-                  </Button>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Phone Number</label>
+                  <div className="relative">
+                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                    <Input 
+                      type="tel"
+                      placeholder="61xxxxxxx"
+                      value={phoneNumber}
+                      onChange={(e) => setPhoneNumber(e.target.value)}
+                      className="pl-12 h-14 rounded-2xl border-slate-100 focus:border-blue-500 focus:ring-4 focus:ring-blue-50 bg-slate-50/50 text-slate-700 font-medium transition-all"
+                      required
+                    />
+                  </div>
                 </div>
-                <p className="text-center text-sm text-slate-500">
-                  Didn't get the code? <button type="button" onClick={handleSendOTP} className="text-blue-600 font-bold hover:underline">Resend</button>
-                </p>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Password (6+ xaraf)</label>
+                  <div className="relative">
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                    <Input 
+                      type="password"
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="pl-12 h-14 rounded-2xl border-slate-100 focus:border-blue-500 focus:ring-4 focus:ring-blue-50 bg-slate-50/50 text-slate-700 font-medium transition-all"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <Button 
+                  type="submit"
+                  disabled={loading}
+                  className="w-full h-14 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-bold flex items-center justify-center gap-2 shadow-lg shadow-blue-100 transition-all active:scale-[0.98]"
+                >
+                  {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <>Sign Up <UserPlus className="w-5 h-5" /></>}
+                </Button>
+
+                <div className="pt-2 text-center text-sm">
+                  <span className="text-slate-500">Ma leedahay akoon? </span>
+                  <button 
+                    type="button"
+                    onClick={() => setView('login')}
+                    className="text-blue-600 font-bold hover:underline"
+                  >
+                    Login
+                  </button>
+                </div>
               </form>
             )}
 
-            <div className="relative py-2">
+            <div className="relative py-4">
               <div className="absolute inset-0 flex items-center">
                 <span className="w-full border-t border-slate-100" />
               </div>
-              <div className="relative flex justify-center text-xs uppercase px-2 text-slate-400 bg-white">
-                Secure Authentication
+              <div className="relative flex justify-center text-[10px] uppercase font-bold tracking-widest px-4 text-slate-300 bg-white">
+                Jaara Academy AI
               </div>
             </div>
 
-            <p className="text-center text-xs text-slate-400 leading-relaxed">
-              Your security is our priority. Jaara Academy uses industry standard encryption to protect your account.
+            <p className="text-center text-[10px] text-slate-400 leading-relaxed px-4">
+              By continuing, you agree to Jaara Academy's Terms of Service and Privacy Policy.
             </p>
           </div>
         </CardContent>
