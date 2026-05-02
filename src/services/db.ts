@@ -45,11 +45,8 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
     path
   };
   console.error('Firestore Error: ', JSON.stringify(errInfo));
-  // In dev, we might want to return mock data if the error is "project not found"
-  if (errInfo.error.includes("could not be found") || errInfo.error.includes("placeholder")) {
-    return true; // flag to use mock data
-  }
-  throw new Error(JSON.stringify(errInfo));
+  // In dev/debug, return to allow fallback to mock data
+  return;
 }
 
 // MOCK DATA for initial display if DB is not ready

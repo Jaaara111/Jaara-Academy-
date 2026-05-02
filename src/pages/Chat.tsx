@@ -678,14 +678,16 @@ export default function Chat() {
               {messages.map((msg, i) => {
                 const isMe = msg.senderId === user.uid;
                 const prevMsg = messages[i-1];
-                const showDate = !prevMsg || format(msg.createdAt?.toDate(), 'MMM d') !== format(prevMsg.createdAt?.toDate(), 'MMM d');
+                const msgDate = msg.createdAt?.toDate?.() || new Date();
+                const prevMsgDate = prevMsg?.createdAt?.toDate?.();
+                const showDate = !prevMsg || (msgDate && prevMsgDate && format(msgDate, 'MMM d') !== format(prevMsgDate, 'MMM d'));
 
                 return (
                   <React.Fragment key={msg.id}>
-                    {showDate && (
+                    {showDate && msgDate && (
                       <div className="flex justify-center my-4">
                         <span className="bg-white/90 dark:bg-slate-800 shadow-sm px-3 py-1 rounded-lg text-[10px] font-bold text-slate-500 uppercase tracking-widest border border-slate-100/50">
-                          {format(msg.createdAt?.toDate(), 'MMMM d, yyyy')}
+                          {format(msgDate, 'MMMM d, yyyy')}
                         </span>
                       </div>
                     )}
@@ -717,7 +719,7 @@ export default function Chat() {
                         
                         <div className="flex items-center justify-end gap-1.5 mt-0.5 h-3">
                           <span className={`text-[9px] font-bold uppercase tracking-tighter ${isMe ? 'text-slate-500 dark:text-blue-100/60' : 'text-slate-400'}`}>
-                            {msg.createdAt ? format(msg.createdAt.toDate(), 'HH:mm') : '--:--'}
+                            {msg.createdAt?.toDate ? format(msg.createdAt.toDate(), 'HH:mm') : '--:--'}
                           </span>
                           {isMe && (
                             <div className="flex">

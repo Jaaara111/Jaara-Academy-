@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="8dp"
+    app:cardCornerRadius="16dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <ImageView
+            android:layout_width="match_parent"
+            android:layout_height="120dp"
+            android:background="#EBF2FF"
+            android:padding="32dp"
+            android:src="@android:drawable/ic_menu_agenda"
+            android:tint="#2563EB"/>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="12dp">
+
+            <TextView
+                android:id="@+id/tvBookTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Science G12"
+                android:textStyle="bold"
+                android:textSize="14sp"
+                android:textColor="#1E293B"/>
+
+            <TextView
+                android:id="@+id/tvBookGrade"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Form 4"
+                android:textSize="11sp"
+                android:textColor="#64748B"/>
+        </LinearLayout>
+    </LinearLayout>
+</androidx.cardview.widget.CardView>

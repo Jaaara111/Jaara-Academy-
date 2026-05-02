@@ -1,10 +1,11 @@
-import { ReactNode, useState, useEffect } from 'react';
-import { NavLink, Link, useNavigate } from 'react-router-dom';
-import { Home, BookOpen, GraduationCap, HelpCircle, LayoutDashboard, User, Search, Menu, MessageSquare, Sun, Moon, Monitor, Bot, ShieldAlert } from 'lucide-react';
+import { ReactNode, useState, useEffect, useMemo } from 'react';
+import { NavLink, Link, useNavigate, useLocation } from 'react-router-dom';
+import { Home, BookOpen, GraduationCap, HelpCircle, LayoutDashboard, User, Search, Menu, MessageSquare, Sun, Moon, Monitor, Bot, ShieldAlert, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { authService, AuthUser } from '@/services/authService';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { motion, AnimatePresence } from 'motion/react';
 
 interface LayoutProps {
   children: ReactNode;
@@ -12,10 +13,30 @@ interface LayoutProps {
 
 export default function Layout({ children }: LayoutProps) {
   const navigate = useNavigate();
+  const location = useLocation();
   const [user, setUser] = useState<AuthUser | null>(null);
   const [theme, setTheme] = useState<'light' | 'dark' | 'system'>(() => {
     return (localStorage.getItem('jaara-theme') as any) || 'system';
   });
+
+  const isSpecialPage = useMemo(() => {
+    return ['/chat', '/ai-tutor'].includes(location.pathname);
+  }, [location.pathname]);
+
+  const pageTitle = useMemo(() => {
+    const item = [
+      { to: '/', label: 'Jaara Academy' },
+      { to: '/exams', label: 'National Exams' },
+      { to: '/questions', label: 'Q&A' },
+      { to: '/books', label: 'Curriculum Books' },
+      { to: '/chat', label: 'Messages' },
+      { to: '/ai-tutor', label: 'AI Tutor' },
+      { to: '/leaderboard', label: 'Leaderboard' },
+      { to: '/profile', label: 'Profile' },
+      { to: '/admin', label: 'Admin Dashboard' },
+    ].find(i => i.to === location.pathname);
+    return item?.label || 'Jaara Academy';
+  }, [location.pathname]);
 
   useEffect(() => {
     // Load custom session
@@ -131,7 +152,7 @@ export default function Layout({ children }: LayoutProps) {
           )}
 
           <DropdownMenu>
-            <DropdownMenuTrigger 
+            <DropdownMenuTrigger
               render={
                 <Button variant="ghost" size="icon" className="shrink-0 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800">
                   {theme === 'light' ? <Sun className="w-4 h-4" /> : theme === 'dark' ? <Moon className="w-4 h-4" /> : <Monitor className="w-4 h-4" />}
@@ -154,68 +175,94 @@ export default function Layout({ children }: LayoutProps) {
       </aside>
 
       {/* Header for Mobile */}
-      <header className="md:hidden bg-white border-b border-slate-200 sticky top-0 z-50 flex items-center justify-between px-4 h-16">
-        <Link to="/" className="flex items-center gap-2">
-          <img src="/logo.png" alt="Logo" className="w-8 h-8 rounded-lg" />
-          <span className="font-bold text-lg dark:text-white">Jaara Academy</span>
-        </Link>
+      <header className={`md:hidden bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 sticky top-0 z-50 flex items-center gap-4 px-4 h-16`}>
+        {location.pathname !== '/' && (
+          <Button variant="ghost" size="icon" className="rounded-full shrink-0" onClick={() => navigate(-1)}>
+            <ArrowLeft className="w-5 h-5" />
+          </Button>
+        )}
+        <div className="flex-1 truncate">
+          <span className="font-bold text-lg dark:text-white">{pageTitle}</span>
+        </div>
         <Sheet>
           <SheetTrigger
             render={
-              <Button variant="ghost" size="icon">
+              <Button variant="ghost" size="icon" className="rounded-full">
                 <Menu className="w-6 h-6" />
               </Button>
             }
           />
-          <SheetContent side="left" className="w-64 p-0">
-            <div className="p-6 border-b border-slate-100">
-              <span className="font-bold text-xl">Menu</span>
+          <SheetContent side="right" className="w-72 p-0 border-none bg-slate-900 text-white">
+            <div className="p-8 border-b border-white/10">
+              <div className="flex items-center gap-3">
+                <img src="/logo.png" alt="Jaara" className="w-10 h-10 rounded-xl" />
+                <div>
+                   <h3 className="font-bold text-xl">Jaara Academy</h3>
+                   <p className="text-[10px] text-white/40 uppercase font-bold tracking-widest leading-none">Learn Smart</p>
+                </div>
+              </div>
             </div>
             <nav className="p-4 space-y-2">
               {navItems.map((item) => (
                 <NavLink
                   key={item.to}
                   to={item.to}
-                  className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-50"
+                  className={({ isActive }) => 
+                    `flex items-center gap-4 px-5 py-4 rounded-2xl transition-all ${
+                      isActive ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-white/60 hover:text-white hover:bg-white/5'
+                    }`
+                  }
                 >
-                  <item.icon className="w-5 h-5 text-slate-600" />
-                  <span className="text-slate-800 font-medium">{item.label}</span>
+                  <item.icon className="w-5 h-5 text-current" />
+                  <span className="font-bold text-sm tracking-wide">{item.label}</span>
                 </NavLink>
               ))}
-              <NavLink to="/admin" className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-50">
-                <LayoutDashboard className="w-5 h-5 text-slate-600" />
-                <span className="text-slate-800 font-medium">Dashboard</span>
+              <NavLink 
+                to="/admin" 
+                className={({ isActive }) => 
+                  `flex items-center gap-4 px-5 py-4 rounded-2xl transition-all mt-8 ${
+                    isActive ? 'bg-blue-600 text-white shadow-lg' : 'text-white/60 hover:text-white hover:bg-white/5'
+                  }`
+                }
+              >
+                <LayoutDashboard className="w-5 h-5" />
+                <span className="font-bold text-sm tracking-wide">Admin Control</span>
               </NavLink>
             </nav>
+            <div className="absolute bottom-8 left-8 right-8">
+               {user && (
+                 <Button onClick={handleSignOut} variant="ghost" className="w-full justify-start text-red-400 hover:bg-red-400/10 hover:text-red-400 rounded-xl gap-3 h-12">
+                   <ShieldAlert className="w-5 h-5" /> Sign Out
+                 </Button>
+               )}
+            </div>
           </SheetContent>
         </Sheet>
       </header>
 
       {/* Main Content Area */}
-      <main className="flex-1 overflow-x-hidden p-4 md:p-8 max-w-6xl mx-auto w-full">
-        <div className="flex items-center justify-between mb-8">
-          <div className="relative flex-1 max-w-md hidden md:block">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <input 
-              type="text" 
-              placeholder="Search exams, questions, books..." 
-              className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
+      <main className={`flex-1 overflow-x-hidden w-full ${isSpecialPage ? 'p-0 max-w-full' : 'p-4 md:p-8 max-w-6xl mx-auto'}`}>
+        {!isSpecialPage && (
+          <div className="flex items-center justify-between mb-8">
+            <div className="relative flex-1 max-w-md hidden md:block">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <input 
+                type="text" 
+                placeholder="Search exams, questions, books..." 
+                className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
           </div>
-          <div className="md:hidden w-full relative">
-             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-             <input 
-              type="text" 
-              placeholder="Search..." 
-              className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl focus:outline-none"
-            />
-          </div>
-        </div>
-        {children}
+        )}
         
-        {/* Professional Footer */}
-        <footer className="mt-20 pt-12 pb-8 border-t border-slate-200">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
+        <div key={location.pathname}>
+          {children}
+        </div>
+        
+        {/* Professional Footer - Hidden on Special Pages or Mobile App Mode */}
+        {!isSpecialPage && (
+          <footer className="mt-20 pt-12 pb-8 border-t border-slate-200 hidden md:block">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
             <div className="col-span-1 md:col-span-2 space-y-4">
               <div className="flex items-center gap-3">
                 <img src="/logo.png" alt="Jaara" className="w-8 h-8 rounded-lg shadow-sm" />
@@ -253,22 +300,34 @@ export default function Layout({ children }: LayoutProps) {
             </div>
           </div>
         </footer>
+        )}
       </main>
 
       {/* Bottom Nav for Mobile */}
-      <nav className="md:hidden bg-white border-t border-slate-200 sticky bottom-0 z-50 flex items-center justify-around h-16 px-2 shadow-lg">
-        {navItems.map((item) => (
+      <nav className="md:hidden bg-white/95 dark:bg-slate-900/95 backdrop-blur-lg border-t border-slate-200 dark:border-slate-800 sticky bottom-0 z-50 flex items-center justify-around h-16 px-2">
+        {navItems.filter(i => ['/', '/chat', '/ai-tutor'].includes(i.to)).concat([{to: '/profile', icon: User, label: 'Profile'}]).map((item) => (
           <NavLink
             key={item.to}
             to={item.to}
             className={({ isActive }) =>
-              `flex flex-col items-center gap-1 p-2 min-w-[64px] transition-colors ${
-                isActive ? 'text-blue-600' : 'text-slate-500'
+              `flex flex-col items-center gap-1 p-2 min-w-[64px] transition-all relative ${
+                isActive ? 'text-blue-600 scale-110' : 'text-slate-400'
               }`
             }
           >
-            <item.icon className="w-6 h-6" />
-            <span className="text-[10px] uppercase font-bold tracking-wider">{item.label}</span>
+            {({ isActive }) => (
+              <>
+                <item.icon className={`w-6 h-6 transition-transform ${isActive ? 'stroke-[2.5px]' : 'stroke-2'}`} />
+                <span className={`text-[9px] uppercase font-bold tracking-wider ${isActive ? 'opacity-100' : 'opacity-60'}`}>{item.label}</span>
+                {isActive && (
+                  <motion.div 
+                    layoutId="bubble"
+                    className="absolute -top-1 w-1 h-1 bg-blue-600 rounded-full"
+                    transition={{ type: 'spring', bounce: 0.2, duration: 0.6 }}
+                  />
+                )}
+              </>
+            )}
           </NavLink>
         ))}
       </nav>

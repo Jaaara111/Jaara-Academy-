@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.jaara.academy">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+
+    <application
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="Jaara Academy"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.Jaara"
+        android:usesCleartextTraffic="true">
+        
+        <activity
+            android:name=".ui.SplashActivity"
+            android:exported="true"
+            android:theme="@style/Theme.Jaara.NoActionBar">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <activity android:name=".ui.auth.LoginActivity" />
+        <activity android:name=".ui.auth.RegisterActivity" />
+        <activity android:name=".ui.dashboard.MainActivity" />
+        <activity android:name=".ui.dashboard.AdminActivity" />
+        <activity android:name=".ui.dashboard.AddStudentActivity" />
+        <activity android:name=".ui.dashboard.ProfileActivity" />
+        <activity android:name=".ui.dashboard.ExamsListActivity" />
+        <activity android:name=".ui.dashboard.ResultsActivity" />
+        <activity android:name=".ui.dashboard.AttendanceActivity" />
+        <activity android:name=".ui.dashboard.PdfViewerActivity" />
+        <activity android:name=".ui.dashboard.BooksActivity" />
+        <activity android:name=".ui.dashboard.ChatActivity" />
+        <activity android:name=".ui.dashboard.AiTutorActivity" />
+        <activity android:name=".ui.dashboard.ChallengeActivity" />
+        
+    </application>
+
+</manifest>

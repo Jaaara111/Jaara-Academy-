@@ -169,8 +169,44 @@ export default function Home() {
           </div>
       </section>
 
-      {/* Quick Access */}
-      <section>
+      {/* Quick Access Mobile Grid */}
+      <section className="md:hidden">
+        <div className="grid grid-cols-2 gap-4">
+          {quickLinks.map((link, i) => (
+            <Link key={i} to={link.to} className="block">
+              <motion.div
+                whileTap={{ scale: 0.95 }}
+                className={`${link.color} p-6 rounded-[2rem] text-white shadow-lg shadow-blue-500/10 flex flex-col items-center justify-center text-center gap-3`}
+              >
+                <div className="bg-white/20 p-3 rounded-2xl">
+                  <link.icon className="w-8 h-8" />
+                </div>
+                <div>
+                   <p className="font-bold text-sm tracking-tight">{link.title.split(' ')[0]}</p>
+                   <p className="text-[10px] opacity-70 font-medium">Browse Files</p>
+                </div>
+              </motion.div>
+            </Link>
+          ))}
+          <Link to="/ai-tutor" className="block">
+            <motion.div
+              whileTap={{ scale: 0.95 }}
+              className="bg-slate-900 p-6 rounded-[2rem] text-white shadow-lg flex flex-col items-center justify-center text-center gap-3"
+            >
+              <div className="bg-blue-500 p-3 rounded-2xl">
+                <Bot className="w-8 h-8" />
+              </div>
+              <div>
+                 <p className="font-bold text-sm tracking-tight">AI Tutor</p>
+                 <p className="text-[10px] opacity-70 font-medium">Ask Anything</p>
+              </div>
+            </motion.div>
+          </Link>
+        </div>
+      </section>
+
+      {/* Quick Access for Desktop (Hidden on Mobile) */}
+      <section className="hidden md:block">
         <h2 className="text-2xl font-bold mb-6">Quick Access</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {quickLinks.map((link, i) => (
@@ -200,10 +236,10 @@ export default function Home() {
       {/* Subjects Grid */}
       <section>
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold">Explore by Subject</h2>
-          <Button variant="link" className="text-blue-600 font-semibold">View All</Button>
+          <h2 className="text-2xl font-bold">Explore Subjects</h2>
+          <Button variant="link" className="text-blue-600 font-semibold p-0 h-auto">View All</Button>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+        <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-3 md:gap-4">
           {subjects.map((subject, i) => {
             const IconComp = iconMap[subject.icon] || Book;
             return (
@@ -214,14 +250,12 @@ export default function Home() {
                 transition={{ delay: i * 0.05 }}
               >
                 <Link to={`/subject/${subject.id}`}>
-                  <Card className="text-center hover:bg-blue-50 hover:border-blue-200 cursor-pointer transition-all border-slate-100 group">
-                    <CardContent className="pt-8 pb-6">
-                      <div className="w-12 h-12 rounded-full bg-slate-50 flex items-center justify-center mx-auto mb-4 group-hover:bg-blue-100 transition-colors">
-                        <IconComp className="w-6 h-6 text-slate-600 group-hover:text-blue-600" />
-                      </div>
-                      <h3 className="font-bold text-slate-800">{subject.name}</h3>
-                    </CardContent>
-                  </Card>
+                  <div className="flex flex-col items-center gap-2 group">
+                    <div className="w-full aspect-square rounded-[1.5rem] bg-white dark:bg-slate-800 border-2 border-transparent group-hover:border-blue-500/50 shadow-sm flex items-center justify-center transition-all group-active:scale-95">
+                      <IconComp className="w-8 h-8 text-slate-700 dark:text-blue-400 group-hover:text-blue-600 transition-colors" />
+                    </div>
+                    <h3 className="font-bold text-[11px] text-slate-800 dark:text-white uppercase tracking-wider text-center">{subject.name}</h3>
+                  </div>
                 </Link>
               </motion.div>
             );
