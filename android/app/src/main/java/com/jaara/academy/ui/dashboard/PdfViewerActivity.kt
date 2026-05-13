@@ -1,6 +1,9 @@
 package com.jaara.academy.ui.dashboard
 
 import android.os.Bundle
+import android.webkit.WebSettings
+import android.webkit.WebView
+import android.webkit.WebViewClient
 import androidx.appcompat.app.AppCompatActivity
 import com.jaara.academy.databinding.ActivityPdfViewerBinding
 
@@ -12,14 +15,27 @@ class PdfViewerActivity : AppCompatActivity() {
         binding = ActivityPdfViewerBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        val title = intent.getStringExtra("PDF_TITLE") ?: "Document"
-        val url = intent.getStringExtra("PDF_URL")
-
-        binding.toolbar.title = title
-        setSupportActionBar(binding.toolbar)
-        supportActionBar?.setDisplayHomeAsUpEnabled(true)
         binding.toolbar.setNavigationOnClickListener { finish() }
 
-        // Logic to load PDF from URL would go here
+        val pdfUrl = intent.getStringExtra("PDF_URL") ?: ""
+        val title = intent.getStringExtra("BOOK_TITLE") ?: "Reader"
+        binding.toolbar.title = title
+
+        setupWebView(pdfUrl)
+    }
+
+    private fun setupWebView(url: String) {
+        binding.webView.settings.javaScriptEnabled = true
+        binding.webView.settings.pluginState = WebSettings.PluginState.ON
+        binding.webView.webViewClient = object : WebViewClient() {
+            override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean {
+                view?.loadUrl(url ?: "")
+                return true
+            }
+        }
+        
+        // Using Google Drive Viewer to render online PDFs
+        val googleDocsUrl = "https://docs.google.com/gview?embedded=true&url=$url"
+        binding.webView.loadUrl(googleDocsUrl)
     }
 }

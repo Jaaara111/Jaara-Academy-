@@ -1,47 +1,31 @@
 package com.jaara.academy.models
 
-data class User(
-    val id: String,
-    val name: String,
-    val phone: String,
-    val role: String,
-    val token: String? = null
-)
+import com.google.firebase.Timestamp
 
-data class Exam(
-    val id: String,
-    val title: String,
-    val subject: String,
-    val year: String,
-    val pdfUrl: String
-)
-
-data class ApiResponse<T>(
-    val success: Boolean,
-    val message: String,
-    val data: T?
-)
-
-data class Book(
-    val id: String,
-    val title: String,
-    val grade: String,
-    val subject: String,
-    val pdfUrl: String
+data class Subject(
+    var id: String = "",
+    val name: String = "",
+    val icon: String = "" // Drawable name or URL
 )
 
 data class ChatMessage(
-    val id: String,
-    val senderId: String,
-    val senderName: String,
-    val text: String,
-    val timestamp: Long,
-    val isMe: Boolean = false
+    val chatRoomId: String = "",
+    val senderId: String = "",
+    val text: String = "",
+    val createdAt: Timestamp? = null
 )
 
-data class Challenge(
-    val id: String,
-    val title: String,
-    val points: Int,
-    val difficulty: String
+data class Exam(
+    var id: String = "",
+    val title: String = "",
+    val subject: String = "",
+    val grade: String = "",
+    val durationMinutes: Int = 30
+)
+
+data class Question(
+    val id: String = "",
+    val text: String = "",
+    val options: List<String> = emptyList(),
+    val correctAnswerIndex: Int = 0
 )

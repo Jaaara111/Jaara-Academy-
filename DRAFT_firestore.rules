@@ -1,0 +1,118 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // --------------------------------------------------------
+    // Phase 3: Primitives & Global Helpers
+    // --------------------------------------------------------
+    
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // Admins are defined in a dedicated collection
+    function isAdmin() {
+      return isSignedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    // --------------------------------------------------------
+    // Pillar 2: Validation Blueprints
+    // --------------------------------------------------------
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'phoneNumber', 'password'])
+        && data.uid is string && data.uid.size() <= 128
+        && data.phoneNumber is string && data.phoneNumber.size() <= 20
+        && data.password is string && data.password.size() <= 200
+        && (data.uid == request.auth.uid); // Identity Integrity
+    }
+
+    function isValidBook(data) {
+      return data.keys().hasAll(['title', 'grade', 'subject', 'pdfUrl', 'createdAt'])
+        && data.title is string && data.title.size() <= 255
+        && data.grade is string && data.grade.size() <= 50
+        && data.subject is string && data.subject.size() <= 100
+        && data.pdfUrl is string && data.pdfUrl.size() <= 512
+        && data.createdAt == request.time;
+    }
+
+    function isValidExam(data) {
+      return data.keys().hasAll(['title', 'subject', 'year', 'pdfUrl', 'type', 'createdAt'])
+        && data.title is string && data.title.size() <= 255
+        && data.subject is string && data.subject.size() <= 100
+        && data.year is string && data.year.size() == 4
+        && data.pdfUrl is string && data.pdfUrl.size() <= 512
+        && data.type in ['8th', 'Form 4']
+        && data.createdAt == request.time;
+    }
+
+    function isValidMessage(data) {
+      return data.keys().hasAll(['chatRoomId', 'senderId', 'receiverId', 'text', 'createdAt'])
+        && data.chatRoomId is string && data.chatRoomId.size() <= 128
+        && data.senderId == request.auth.uid
+        && data.receiverId is string && data.receiverId.size() <= 128
+        && data.text is string && data.text.size() <= 1000
+        && data.createdAt == request.time;
+    }
+
+    // --------------------------------------------------------
+    // Pillar 0: Global Safety Net
+    // --------------------------------------------------------
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --------------------------------------------------------
+    // Phase 4: Match Blocks
+    // --------------------------------------------------------
+
+    match /users/{userId} {
+      allow get: if isSignedIn();
+      allow list: if isAdmin();
+      allow create: if isSignedIn() && isValidUser(incoming()) && userId == request.auth.uid;
+      allow update: if isSignedIn() && isOwner(userId) && isValidUser(incoming())
+        && incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'photoURL', 'lastLogin']);
+    }
+
+    match /books/{bookId} {
+      allow read: if isSignedIn();
+      allow create: if isAdmin() && isValidBook(incoming());
+      allow update: if isAdmin() && isValidBook(incoming());
+      allow delete: if isAdmin();
+    }
+
+    match /exams/{examId} {
+      allow read: if isSignedIn();
+      allow create: if isAdmin() && isValidExam(incoming());
+      allow update: if isAdmin() && isValidExam(incoming());
+      allow delete: if isAdmin();
+    }
+
+    match /chat_messages/{messageId} {
+      // Secure List Queries (Pillar 8)
+      allow list: if isSignedIn() && (resource.data.senderId == request.auth.uid || resource.data.receiverId == request.auth.uid);
+      allow get: if isSignedIn() && (resource.data.senderId == request.auth.uid || resource.data.receiverId == request.auth.uid);
+      allow create: if isSignedIn() && isValidMessage(incoming());
+    }
+
+    match /admins/{adminId} {
+      allow read: if isSignedIn() && adminId == request.auth.uid;
+    }
+  }
+}

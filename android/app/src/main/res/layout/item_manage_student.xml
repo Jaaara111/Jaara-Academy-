@@ -13,37 +13,46 @@
         android:padding="16dp"
         android:gravity="center_vertical">
 
+        <ImageView
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:src="@android:drawable/ic_menu_myplaces"
+            android:tint="#2563EB"
+            android:background="@drawable/abc_ic_star_black_16dp"
+            android:backgroundTint="#EFF6FF"
+            android:padding="8dp"/>
+
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:orientation="vertical">
+            android:orientation="vertical"
+            android:layout_marginStart="16dp">
 
             <TextView
-                android:id="@+id/tvExamTitle"
+                android:id="@+id/tvStudentName"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Final Exam"
+                android:text="Student Name"
                 android:textStyle="bold"
                 android:textSize="16sp"/>
 
             <TextView
-                android:id="@+id/tvExamSubject"
+                android:id="@+id/tvStudentPhone"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Mathematics - 30 mins"
+                android:text="061xxxxxxx"
                 android:textColor="#64748B"
                 android:textSize="12sp"/>
         </LinearLayout>
 
-        <Button
-            android:id="@+id/btnStartExam"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="START"
-            android:backgroundTint="#2563EB"
-            android:textColor="@android:color/white"
-            style="@style/Widget.MaterialComponents.Button.Small"/>
+        <ImageButton
+            android:id="@+id/btnRemoveStudent"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:src="@android:drawable/ic_menu_close_clear_cancel"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:tint="#EF4444"/>
 
     </LinearLayout>
 </androidx.cardview.widget.CardView>

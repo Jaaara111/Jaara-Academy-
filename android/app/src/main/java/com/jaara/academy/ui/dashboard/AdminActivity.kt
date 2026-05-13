@@ -12,13 +12,32 @@ class AdminActivity : AppCompatActivity() {
         binding = ActivityAdminBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        loadStats()
+
         binding.btnAddStudent.setOnClickListener {
             startActivity(Intent(this, AddStudentActivity::class.java))
         }
 
         binding.btnUploadPDF.setOnClickListener {
-            // In a real app, use FilePicker or launch a dedicated Upload Activity
-            Toast.makeText(this, "Select PDF from storage...", Toast.LENGTH_SHORT).show()
+            startActivity(Intent(this, AddBookActivity::class.java))
+        }
+
+        // Additional Management Buttons
+        binding.btnManageBooks.setOnClickListener {
+            startActivity(Intent(this, ManageBooksActivity::class.java))
+        }
+        
+        binding.btnManageStudents.setOnClickListener {
+            startActivity(Intent(this, ManageStudentsActivity::class.java))
+        }
+    }
+
+    private fun loadStats() {
+        FirebaseService.getBooks { list ->
+            binding.tvBooksCount.text = list.size.toString()
+        }
+        FirebaseService.getUsers { list ->
+            binding.tvUsersCount.text = list.size.toString()
         }
     }
 }

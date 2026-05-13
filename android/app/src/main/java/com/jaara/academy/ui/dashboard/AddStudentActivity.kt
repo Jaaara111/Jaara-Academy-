@@ -18,9 +18,23 @@ class AddStudentActivity : AppCompatActivity() {
             val phone = binding.etStudentPhone.text.toString()
             
             if (name.isNotEmpty() && phone.isNotEmpty()) {
-                // Mock API call to register.php but with admin context
-                Toast.makeText(this, "Student $name added successfully", Toast.LENGTH_LONG).show()
-                finish()
+                val student = hashMapOf(
+                    "name" to name,
+                    "phone" to phone,
+                    "role" to "student",
+                    "createdAt" to com.google.firebase.Timestamp.now()
+                )
+                
+                com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                    .collection("users")
+                    .add(student)
+                    .addOnSuccessListener {
+                        Toast.makeText(this, "Student '$name' added to Cloud!", Toast.LENGTH_LONG).show()
+                        finish()
+                    }
+                    .addOnFailureListener {
+                        Toast.makeText(this, "Save failed: ${it.message}", Toast.LENGTH_SHORT).show()
+                    }
             } else {
                 Toast.makeText(this, "Please fill required fields", Toast.LENGTH_SHORT).show()
             }

@@ -1,5 +1,6 @@
 package com.jaara.academy.ui.dashboard
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.ViewGroup
@@ -20,19 +21,14 @@ class BooksActivity : AppCompatActivity() {
 
         binding.toolbar.setNavigationOnClickListener { finish() }
 
-        setupRecyclerView()
+        loadBooks()
     }
 
-    private fun setupRecyclerView() {
-        val dummyBooks = listOf(
-            Book("1", "Physics Grade 12", "Form 4", "Physics", "url1"),
-            Book("2", "Math Grade 8", "Grade 8", "Mathematics", "url2"),
-            Book("3", "History Form 2", "Form 2", "History", "url3"),
-            Book("4", "Chemistry Grade 12", "Form 4", "Chemistry", "url4")
-        )
-
-        binding.rvBooks.layoutManager = GridLayoutManager(this, 2)
-        binding.rvBooks.adapter = BookAdapter(dummyBooks)
+    private fun loadBooks() {
+        com.jaara.academy.api.FirebaseService.getBooks { list ->
+            binding.rvBooks.layoutManager = GridLayoutManager(this, 2)
+            binding.rvBooks.adapter = BookAdapter(list)
+        }
     }
 }
 
@@ -48,6 +44,14 @@ class BookAdapter(private val books: List<Book>) : RecyclerView.Adapter<BookAdap
         val book = books[position]
         holder.binding.tvBookTitle.text = book.title
         holder.binding.tvBookGrade.text = book.grade
+        
+        holder.itemView.setOnClickListener {
+            val intent = Intent(it.context, PdfViewerActivity::class.java).apply {
+                putExtra("PDF_URL", book.pdfUrl)
+                putExtra("BOOK_TITLE", book.title)
+            }
+            it.context.startActivity(intent)
+        }
     }
 
     override fun getItemCount() = books.size

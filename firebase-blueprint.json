@@ -74,9 +74,45 @@
         "createdAt": { "type": "object" }
       },
       "required": ["name", "icon"]
+    },
+    "Book": {
+      "title": "System Book",
+      "description": "Educational book available for students",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "grade": { "type": "string" },
+        "subject": { "type": "string" },
+        "pdfUrl": { "type": "string" },
+        "uploadedBy": { "type": "string" },
+        "createdAt": { "type": "object" }
+      },
+      "required": ["title", "grade", "subject", "pdfUrl", "createdAt"]
+    },
+    "Exam": {
+      "title": "Past Exam Paper",
+      "description": "National or local exam paper available for practice",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "subject": { "type": "string" },
+        "year": { "type": "string" },
+        "pdfUrl": { "type": "string" },
+        "type": { "type": "string", "enum": ["8th", "Form 4"] },
+        "createdAt": { "type": "object" }
+      },
+      "required": ["title", "subject", "year", "pdfUrl", "type", "createdAt"]
     }
   },
   "firestore": {
+    "/books/{bookId}": {
+      "schema": "Book",
+      "description": "Collection of curriculum books"
+    },
+    "/exams/{examId}": {
+      "schema": "Exam",
+      "description": "Collection of past exam papers"
+    },
     "/users/{userId}": {
       "schema": "User",
       "description": "User profiles"

@@ -11,12 +11,11 @@
         android:layout_height="?attr/actionBarSize"
         android:background="#2563EB"
         xmlns:app="http://schemas.android.com/apk/res-auto"
-        app:title="Available Exams"
-        app:titleTextColor="@android:color/white"
-        app:navigationIcon="@drawable/abc_ic_ab_back_material"/>
+        app:title="Manage Courses & Books"
+        app:titleTextColor="@android:color/white"/>
 
     <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rvExams"
+        android:id="@+id/rvManageBooks"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:padding="16dp"

@@ -55,6 +55,16 @@
         android:textColor="#2563EB"/>
 
     <Button
+        android:id="@+id/btnAdminDashboard"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:text="ADMIN DASHBOARD"
+        android:layout_marginTop="16dp"
+        android:backgroundTint="#F59E0B"
+        android:visibility="gone"
+        android:textColor="@android:color/white"/>
+
+    <Button
         android:id="@+id/btnLogout"
         android:layout_width="match_parent"
         android:layout_height="56dp"
@@ -62,5 +72,15 @@
         android:layout_marginTop="16dp"
         android:backgroundTint="#EF4444"
         android:textColor="@android:color/white"/>
+
+    <TextView
+        android:id="@+id/tvVersion"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Version 2.0.4 - Jaara Academy"
+        android:textSize="11sp"
+        android:textColor="#94A3B8"
+        android:layout_marginTop="32dp"
+        android:padding="8dp"/>
 
 </LinearLayout>

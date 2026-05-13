@@ -1,67 +1,144 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Helper functions
+    
+    // --------------------------------------------------------
+    // Phase 3: Primitives & Global Helpers
+    // --------------------------------------------------------
+    
     function isSignedIn() {
       return request.auth != null;
     }
-    
+
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    // Default deny
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // Admins are defined in a dedicated collection OR matching specific email
+    function isAdmin() {
+      return isSignedIn() && (
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
+        request.auth.token.email == "hassanjaarapinho@gmail.com"
+      );
+    }
+
+    // --------------------------------------------------------
+    // Pillar 2: Validation Blueprints
+    // --------------------------------------------------------
+
+    function isValidUser(data) {
+      // Relaxed to support both web (displayName, phoneNumber, password) 
+      // and Android (name, phone) models.
+      // We enforce types and max sizes for safety.
+      return (data.keys().hasAll(['phoneNumber', 'password']) || data.keys().hasAll(['phone', 'name']))
+        && (data.get('uid', 'default') == 'default' || data.uid == request.auth.uid)
+        && (data.get('phoneNumber', '') is string && data.get('phoneNumber', '').size() <= 20)
+        && (data.get('phone', '') is string && data.get('phone', '').size() <= 20)
+        && (data.get('displayName', '') is string && data.get('displayName', '').size() <= 100)
+        && (data.get('name', '') is string && data.get('name', '').size() <= 100);
+    }
+
+    function isValidBook(data) {
+      return data.keys().hasAll(['title', 'grade', 'subject'])
+        && data.title is string && data.title.size() <= 255;
+    }
+
+    function isValidExam(data) {
+      return data.keys().hasAll(['title', 'subject'])
+        && data.title is string && data.title.size() <= 255;
+    }
+
+    function isValidSubject(data) {
+      return data.keys().hasAll(['name'])
+        && data.name is string && data.name.size() <= 100;
+    }
+
+    function isValidQuestion(data) {
+      return data.keys().hasAll(['text', 'options', 'correctAnswer'])
+        && data.text is string && data.text.size() <= 1000;
+    }
+
+    function isValidConversation(data) {
+      return data.keys().hasAll(['userId', 'title'])
+        && data.userId == request.auth.uid;
+    }
+
+    function isValidAIMessage(data) {
+      return data.keys().hasAll(['conversationId', 'role', 'content'])
+        && data.role in ['user', 'model'];
+    }
+
+    // --------------------------------------------------------
+    // Pillar 0: Global Safety Net
+    // --------------------------------------------------------
     match /{document=**} {
       allow read, write: if false;
     }
 
-    // Connection test
-    match /test/connection {
-      allow read: if true;
-    }
+    // --------------------------------------------------------
+    // Phase 4: Match Blocks
+    // --------------------------------------------------------
 
-    // Users collection
     match /users/{userId} {
-      allow read: if true;
-      allow create: if true;
-      allow update: if true;
+      allow get: if isSignedIn();
+      allow list: if isSignedIn(); // Allow listing for leaderboard etc.
+      allow create: if true; // Allow signup
+      allow update: if (isSignedIn() && isOwner(userId)) || isAdmin();
+      allow delete: if isAdmin();
     }
 
-    // Chat Conversations
-    match /chat_conversations/{chatId} {
-      allow read, write: if true;
-    }
-
-    // Chat Messages
-    match /chat_messages/{messageId} {
-      allow read, create: if true;
-    }
-
-    // AI Tutoring sessions
-    match /conversations/{conversationId} {
-      allow read, write, delete: if true;
-    }
-
-    match /ai_messages/{messageId} {
-      allow read, create, delete: if true;
-    }
-    
-    // Educational data
-    match /exams/{examId} {
-      allow read: if true;
-      allow write: if true;
-    }
     match /books/{bookId} {
       allow read: if true;
-      allow write: if true;
+      allow create, update, delete: if isAdmin();
     }
+
+    match /exams/{examId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /questions/{questionId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isAdmin();
+    }
+
     match /subjects/{subjectId} {
       allow read: if true;
-      allow write: if true;
+      allow create, update, delete: if isAdmin();
     }
-    match /questions/{questionId} {
-      allow read: if true;
-      allow write: if true;
+
+    match /chat_messages/{messageId} {
+      allow read, create: if isSignedIn();
+    }
+
+    match /chat_conversations/{convId} {
+      allow read, write: if isSignedIn();
+    }
+
+    match /conversations/{convId} {
+      allow read, write: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && incoming().userId == request.auth.uid;
+    }
+
+    match /ai_messages/{msgId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn();
+    }
+
+    match /admins/{adminId} {
+      allow read: if isSignedIn() && adminId == request.auth.uid;
     }
   }
 }

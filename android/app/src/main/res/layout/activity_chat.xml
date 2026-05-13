@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:background="#F0F2F5">
+    android:background="#F1F5F9">
 
     <androidx.appcompat.widget.Toolbar
         android:id="@+id/toolbar"
@@ -11,24 +10,28 @@
         android:layout_height="?attr/actionBarSize"
         android:background="#2563EB"
         xmlns:app="http://schemas.android.com/apk/res-auto"
-        app:title="Student Lounge"
-        app:titleTextColor="@android:color/white"/>
+        app:title="Jaara Chat"
+        app:titleTextColor="@android:color/white"
+        app:navigationIcon="@drawable/abc_ic_ab_back_material"/>
 
     <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rvChat"
+        android:id="@+id/rvMessages"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:padding="16dp"
+        android:layout_height="match_parent"
+        android:layout_above="@+id/inputContainer"
+        android:layout_below="@id/toolbar"
+        android:padding="8dp"
         android:clipToPadding="false"/>
 
     <LinearLayout
+        android:id="@+id/inputContainer"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
         android:orientation="horizontal"
-        android:padding="12dp"
+        android:padding="8dp"
         android:background="@android:color/white"
-        android:gravity="center_vertical">
+        android:elevation="4dp">
 
         <EditText
             android:id="@+id/etMessage"
@@ -37,7 +40,8 @@
             android:layout_weight="1"
             android:hint="Type a message..."
             android:background="@null"
-            android:padding="12dp"/>
+            android:padding="12dp"
+            android:maxLines="3"/>
 
         <ImageButton
             android:id="@+id/btnSend"
@@ -47,4 +51,5 @@
             android:background="?attr/selectableItemBackgroundBorderless"
             android:tint="#2563EB"/>
     </LinearLayout>
-</LinearLayout>
+
+</RelativeLayout>

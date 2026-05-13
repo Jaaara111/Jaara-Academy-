@@ -29,15 +29,18 @@
         <activity android:name=".ui.dashboard.MainActivity" />
         <activity android:name=".ui.dashboard.AdminActivity" />
         <activity android:name=".ui.dashboard.AddStudentActivity" />
-        <activity android:name=".ui.dashboard.ProfileActivity" />
+        <activity android:name=".ui.dashboard.AddBookActivity" />
+        <activity android:name=".ui.dashboard.ManageBooksActivity" />
+        <activity android:name=".ui.dashboard.ManageStudentsActivity" />
+        <activity android:name=".ui.dashboard.PdfViewerActivity" />
+        <activity android:name=".ui.dashboard.ChatActivity" />
         <activity android:name=".ui.dashboard.ExamsListActivity" />
         <activity android:name=".ui.dashboard.ResultsActivity" />
         <activity android:name=".ui.dashboard.AttendanceActivity" />
-        <activity android:name=".ui.dashboard.PdfViewerActivity" />
         <activity android:name=".ui.dashboard.BooksActivity" />
-        <activity android:name=".ui.dashboard.ChatActivity" />
         <activity android:name=".ui.dashboard.AiTutorActivity" />
         <activity android:name=".ui.dashboard.ChallengeActivity" />
+        <activity android:name=".ui.dashboard.ProfileActivity" />
         
     </application>
 

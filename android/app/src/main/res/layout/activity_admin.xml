@@ -33,8 +33,14 @@
                 android:layout_height="match_parent"
                 android:gravity="center"
                 android:orientation="vertical">
-                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Total Users" android:textColor="#64748B" android:textSize="12sp"/>
-                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="1,240" android:textSize="24sp" android:textStyle="bold"/>
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Active Users" android:textColor="#64748B" android:textSize="12sp"/>
+                <TextView 
+                    android:id="@+id/tvUsersCount"
+                    android:layout_width="wrap_content" 
+                    android:layout_height="wrap_content" 
+                    android:text="0" 
+                    android:textSize="24sp" 
+                    android:textStyle="bold"/>
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 
@@ -50,8 +56,14 @@
                 android:layout_height="match_parent"
                 android:gravity="center"
                 android:orientation="vertical">
-                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Exams" android:textColor="#64748B" android:textSize="12sp"/>
-                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="85" android:textSize="24sp" android:textStyle="bold"/>
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Books" android:textColor="#64748B" android:textSize="12sp"/>
+                <TextView 
+                    android:id="@+id/tvBooksCount"
+                    android:layout_width="wrap_content" 
+                    android:layout_height="wrap_content" 
+                    android:text="0" 
+                    android:textSize="24sp" 
+                    android:textStyle="bold"/>
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 
@@ -62,8 +74,7 @@
         android:layout_width="match_parent"
         android:layout_height="60dp"
         android:text="ADD NEW STUDENT"
-        android:layout_marginTop="32dp"
-        app:icon="@drawable/ic_add"/>
+        android:layout_marginTop="32dp"/>
 
     <Button
         android:id="@+id/btnUploadPDF"
@@ -72,5 +83,23 @@
         android:text="UPLOAD CURRICULUM PDF"
         android:layout_marginTop="12dp"
         style="@style/Widget.MaterialComponents.Button.OutlinedButton"/>
+
+    <Button
+        android:id="@+id/btnManageBooks"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:text="MANAGE ALL BOOKS"
+        android:layout_marginTop="12dp"
+        style="@style/Widget.MaterialComponents.Button.TextButton"
+        android:textColor="#EF4444"/>
+
+    <Button
+        android:id="@+id/btnManageStudents"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:text="MANAGE ALL STUDENTS"
+        android:layout_marginTop="8dp"
+        style="@style/Widget.MaterialComponents.Button.TextButton"
+        android:textColor="#6366F1"/>
 
 </LinearLayout>

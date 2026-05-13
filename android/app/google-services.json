@@ -1,0 +1,28 @@
+{
+  "project_info": {
+    "project_number": "1033755355205",
+    "project_id": "gen-lang-client-0737997210",
+    "storage_bucket": "gen-lang-client-0737997210.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1033755355205:android:6ea278f7e2794c1a636db2c",
+        "android_client_info": {
+          "package_name": "com.jaara.academy"
+        }
+      },
+      "api_key": [
+        {
+          "current_key": "AIzaSyBu0uYodUD3bLAYGe7tXGJkQs6rCIL0vkQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
